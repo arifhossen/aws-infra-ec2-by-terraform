@@ -111,6 +111,7 @@ module "awscodebuild" {
   notification_email      = var.notification_email
   codebuild_role_arn      = module.iam.codebuild_iam_role_arn
   ecr_repository_app_name = module.ecr.ecr_repository_name
+
 }
 
 
@@ -123,6 +124,7 @@ module "awscodeDeploy" {
   notification_email     = var.notification_email
   codedeploy_role_arn    = module.iam.codedeploy_iam_role_arn
   deployment_config_name = var.deployment_config_name
+  ec2_instance_name      = module.ec2.instance_name
 }
 
 

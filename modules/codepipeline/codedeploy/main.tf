@@ -38,7 +38,7 @@ resource "aws_codedeploy_deployment_group" "app" {
     ec2_tag_filter {
       key   = "Name"
       type  = "KEY_AND_VALUE"
-      value = "${var.project_name}-server"
+      value = var.ec2_instance_name
     }
 
     ec2_tag_filter {

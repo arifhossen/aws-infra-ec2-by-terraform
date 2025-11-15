@@ -17,6 +17,12 @@ variable "notification_email" {
 
 }
 
+variable "ec2_instance_name" {
+  description = "Instance name tag for EC2 instances"
+  type        = string
+
+}
+
 variable "codedeploy_role_arn" {
   type    = string
   default = "CodeDeploy iam role arn"

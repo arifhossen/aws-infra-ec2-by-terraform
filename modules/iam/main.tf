@@ -129,6 +129,19 @@ data "aws_iam_policy_document" "codepipeline_policy" {
       ]
     }
   }
+
+  # KMS permissions for artifact encryption/decryption
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "kms:Decrypt",
+      "kms:DescribeKey",
+      "kms:GenerateDataKey"
+    ]
+
+    resources = ["*"]
+  }
 }
 
 # ============================================================================
@@ -264,6 +277,19 @@ data "aws_iam_policy_document" "codebuild_policy" {
 
     resources = ["*"]
   }
+
+  # KMS permissions for artifact decryption
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "kms:Decrypt",
+      "kms:DescribeKey",
+      "kms:GenerateDataKey"
+    ]
+
+    resources = ["*"]
+  }
 }
 
 # ============================================================================
@@ -294,7 +320,7 @@ data "aws_iam_policy_document" "codedeploy_assume_role" {
 
 # Attach AWS managed policy for CodeDeploy
 resource "aws_iam_role_policy_attachment" "codedeploy_policy" {
-  role       = aws_iam_role.codedeploy_role.name
+  role = aws_iam_role.codedeploy_role.name
   # Use the service-role path for the managed CodeDeploy role policy
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSCodeDeployRole"
 }
