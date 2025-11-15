@@ -1,0 +1,28 @@
+# Ignore Terraform directories and files
+.DS_Store
+.terraform/
+*.tfstate
+*.tfstate.backup
+crash.log
+*.tfvars.json
+override.tf
+override.tf.json
+terraform.rc
+.terraformrc
+environments/dev/.terraform/*
+environments/dev/terraform.tfstate
+environments/dev/terraform.tfstate.backup
+
+# Terraform state files
+*.tfstate
+*.tfstate.backup
+terraform.tfstate.d/
+
+# Terraform plan files
+*.tfplan
+
+
+
+
+
+
