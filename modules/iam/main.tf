@@ -530,6 +530,19 @@ data "aws_iam_policy_document" "ec2_additional_policy" {
 
     resources = ["*"]
   }
+
+  # KMS permissions for artifact decryption
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "kms:Decrypt",
+      "kms:DescribeKey",
+      "kms:GenerateDataKey"
+    ]
+
+    resources = ["*"]
+  }
 }
 
 # Create instance profile
