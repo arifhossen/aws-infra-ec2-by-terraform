@@ -135,13 +135,6 @@ resource "aws_codepipeline" "app" {
   tags = {
     Name = "${var.project_name}-pipeline"
   }
-
-  # depends_on = [
-  #   aws_iam_role.codepipeline_role,
-  #   aws_s3_bucket.pipeline_artifacts,
-  #   aws_codebuild_project.app_build,
-  #   aws_codedeploy_app.app
-  # ]
 }
 
 # KMS Key for encrypting pipeline artifacts
