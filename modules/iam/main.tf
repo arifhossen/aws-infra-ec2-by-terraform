@@ -125,7 +125,6 @@ data "aws_iam_policy_document" "codepipeline_policy" {
         "cloudformation.amazonaws.com",
         "elasticbeanstalk.amazonaws.com",
         "ec2.amazonaws.com",
-        "ecs-tasks.amazonaws.com"
       ]
     }
   }
@@ -465,8 +464,8 @@ data "aws_iam_policy_document" "ec2_additional_policy" {
     ]
 
     # resources = [
-    #   "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:/ecs/${var.project_name}",
-    #   "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:/ecs/${var.project_name}:*"
+    #   "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:/ec2/${var.project_name}",
+    #   "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:/ec2/${var.project_name}:*"
     # ]
 
     resources = [

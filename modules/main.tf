@@ -31,14 +31,6 @@ module "keypair" {
   project_name = var.project_name
 }
 
-# CloudWatch Logs
-module "cloudwatch" {
-  source       = "./cloudwatch-logs"
-  stage        = var.stage
-  organization = var.organization
-  project_name = var.project_name
-}
-
 # s3
 module "s3" {
   source       = "./s3"
@@ -46,7 +38,6 @@ module "s3" {
   organization = var.organization
   project_name = var.project_name
 }
-
 
 # Iam
 module "iam" {
@@ -98,19 +89,29 @@ module "ecr" {
   organization = var.organization
   project_name = var.project_name
 
+}
+
+#CloudWatch Logs 
+module "cloudwatch" {
+  source             = "./cloudwatch-logs"
+  stage              = var.stage
+  organization       = var.organization
+  project_name       = var.project_name
+  log_retention_days = var.log_retention_days
 
 }
 
 
 # AWS Pipeline: Codebuild
 module "awscodebuild" {
-  source                  = "./codepipeline/codebuild"
-  stage                   = var.stage
-  organization            = var.organization
-  project_name            = var.project_name
-  notification_email      = var.notification_email
-  codebuild_role_arn      = module.iam.codebuild_iam_role_arn
-  ecr_repository_app_name = module.ecr.ecr_repository_name
+  source                                       = "./codepipeline/codebuild"
+  stage                                        = var.stage
+  organization                                 = var.organization
+  project_name                                 = var.project_name
+  notification_email                           = var.notification_email
+  codebuild_role_arn                           = module.iam.codebuild_iam_role_arn
+  ecr_repository_app_name                      = module.ecr.ecr_repository_name
+  aws_cloudwatch_log_group_codebuild_logs_name = module.cloudwatch.codebuild_logs_group_name
 
 }
 
@@ -126,7 +127,6 @@ module "awscodeDeploy" {
   deployment_config_name = var.deployment_config_name
   ec2_instance_name      = module.ec2.instance_name
 }
-
 
 # AWS Pipeline: CodePipeline
 module "awscodepipeline" {

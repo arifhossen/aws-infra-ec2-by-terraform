@@ -1,4 +1,45 @@
-# codepipeline.tf
+# -------------------------------------------------------------
+# AWS CodePipeline Terraform Module: Step-by-Step Overview
+#
+# 1. Prerequisites
+#    - S3 bucket for pipeline artifacts
+#    - IAM roles for CodePipeline, CodeBuild, CodeDeploy
+#    - GitHub repository and CodeStar Connection ARN
+#    - Email for notifications (optional)
+#
+# 2. Main Resources and Flow
+#    a. Data Sources: aws_region.current, aws_caller_identity.current
+#    b. GitHub Connection: Creates CodeStar Connection if ARN not provided
+#       (Manual: Authorize in AWS Console)
+#    c. SNS Notifications: Creates topic and email subscription
+#    d. KMS Key: Encrypts pipeline artifacts in S3
+#    e. CodePipeline Stages:
+#       1. Source: Pulls code from GitHub
+#       2. Build: CodeBuild compiles/tests code
+#       3. Manual Approval (Optional): Email approval before deploy
+#       4. Deploy: CodeDeploy to EC2 instances
+#    f. Monitoring & Notifications:
+#       - CloudWatch Events, SNS Topic Policy, CodeStar Notification Rule
+#       - CloudWatch Metric Alarm, CloudWatch Dashboard
+#
+# 3. How It Works (Step-by-Step)
+#    - Source: Fetch code from GitHub
+#    - Build: Compile/test, store in S3 (KMS)
+#    - Manual Approval: Email approval (if enabled)
+#    - Deploy: CodeDeploy to EC2 (tags)
+#    - Notifications: SNS for failures/success/approval
+#    - Monitoring: CloudWatch alarms/dashboards
+#
+# 4. Customization
+#    - enable_manual_approval, notification_email, artifacts_bucket_name, github_connection_arn
+#
+# 5. Manual Steps
+#    - Authorize CodeStar Connection in AWS Console
+#    - Confirm SNS email subscription
+#
+# 6. Troubleshooting
+#    - IAM permissions, EC2 tags, S3 bucket access
+# -------------------------------------------------------------
 # AWS CodePipeline for CI/CD automation
 
 # Data source to get current AWS region
@@ -11,21 +52,21 @@ data "aws_caller_identity" "current" {}
 # Note: This requires manual OAuth authorization in AWS Console after creation
 resource "aws_codestarconnections_connection" "github" {
   count         = var.github_connection_arn == "" ? 1 : 0
-  name          = "${var.project_name}-github-connection"
+  name          = "${var.project_name}_${var.stage}-github-connection"
   provider_type = "GitHub"
 
   tags = {
-    Name = "${var.project_name}-github-connection"
+    Name = "${var.project_name}_${var.stage}-github-connection"
   }
 }
 
 # SNS Topic for notifications
 resource "aws_sns_topic" "notifications" {
   count = var.notification_email != "" ? 1 : 0
-  name  = "${var.project_name}-pipeline-notifications"
+  name  = "${var.project_name}_${var.stage}-pipeline-notifications"
 
   tags = {
-    Name = "${var.project_name}-pipeline-notifications"
+    Name = "${var.project_name}_${var.stage}-pipeline-notifications"
   }
 }
 
@@ -38,7 +79,7 @@ resource "aws_sns_topic_subscription" "notifications" {
 
 # CodePipeline
 resource "aws_codepipeline" "app" {
-  name     = "${var.project_name}-pipeline"
+  name     = "${var.project_name}_${var.stage}-pipeline"
   role_arn = var.codepipeline_role_arn
 
   artifact_store {
@@ -140,24 +181,24 @@ resource "aws_codepipeline" "app" {
 # KMS Key for encrypting pipeline artifacts
 resource "aws_kms_key" "pipeline" {
   count               = 1
-  description         = "KMS key for ${var.project_name} pipeline artifacts"
+  description         = "KMS key for ${var.project_name}_${var.stage} pipeline artifacts"
   enable_key_rotation = true
 
   tags = {
-    Name = "${var.project_name}-pipeline-kms"
+    Name = "${var.project_name}_${var.stage}-pipeline-kms"
   }
 }
 
 resource "aws_kms_alias" "pipeline" {
   count         = 1
-  name          = "alias/${var.project_name}-pipeline"
+  name          = "alias/${var.project_name}_${var.stage}-pipeline"
   target_key_id = aws_kms_key.pipeline[0].key_id
 }
 
 # CloudWatch Event Rule to trigger pipeline on GitHub push
 resource "aws_cloudwatch_event_rule" "pipeline_trigger" {
   count       = 0 # Set to 1 to enable automatic triggering
-  name        = "${var.project_name}-pipeline-trigger"
+  name        = "${var.project_name}_${var.stage}-pipeline-trigger"
   description = "Trigger pipeline on GitHub push"
 
   event_pattern = jsonencode({
@@ -181,7 +222,7 @@ resource "aws_cloudwatch_event_target" "pipeline_notification" {
 # CloudWatch Event Rule for pipeline state changes
 resource "aws_cloudwatch_event_rule" "pipeline_state_change" {
   count       = var.notification_email != "" ? 1 : 0
-  name        = "${var.project_name}-pipeline-state-change"
+  name        = "${var.project_name}_${var.stage}-pipeline-state-change"
   description = "Capture pipeline state changes"
 
   event_pattern = jsonencode({
@@ -240,7 +281,7 @@ data "aws_iam_policy_document" "sns_topic_policy" {
 # CodePipeline Notification Rule
 resource "aws_codestarnotifications_notification_rule" "pipeline" {
   count       = var.notification_email != "" ? 1 : 0
-  name        = "${var.project_name}-pipeline-notifications"
+  name        = "${var.project_name}_${var.stage}-pipeline-notifications"
   detail_type = "FULL"
 
   event_type_ids = [
@@ -256,14 +297,14 @@ resource "aws_codestarnotifications_notification_rule" "pipeline" {
   }
 
   tags = {
-    Name = "${var.project_name}-pipeline-notification-rule"
+    Name = "${var.project_name}_${var.stage}-pipeline-notification-rule"
   }
 }
 
 # CloudWatch Metric Alarm for pipeline failures
 resource "aws_cloudwatch_metric_alarm" "pipeline_failed" {
   count               = var.enable_monitoring ? 1 : 0
-  alarm_name          = "${var.project_name}-pipeline-failed"
+  alarm_name          = "${var.project_name}_${var.stage}-pipeline-failed"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 1
   metric_name         = "PipelineExecutionFailed"
@@ -281,14 +322,14 @@ resource "aws_cloudwatch_metric_alarm" "pipeline_failed" {
   alarm_actions = var.notification_email != "" ? [aws_sns_topic.notifications[0].arn] : []
 
   tags = {
-    Name = "${var.project_name}-pipeline-failed-alarm"
+    Name = "${var.project_name}_${var.stage}-pipeline-failed-alarm"
   }
 }
 
 # CloudWatch Dashboard for Pipeline Metrics
 resource "aws_cloudwatch_dashboard" "pipeline" {
   count          = var.enable_monitoring ? 1 : 0
-  dashboard_name = "${var.project_name}-pipeline-dashboard"
+  dashboard_name = "${var.project_name}_${var.stage}-pipeline-dashboard"
 
   dashboard_body = jsonencode({
     widgets = [

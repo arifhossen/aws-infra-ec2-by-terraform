@@ -2,21 +2,21 @@
 # AWS CodeDeploy application and deployment group
 
 resource "aws_codedeploy_app" "app" {
-  name             = var.project_name
+  name             = "${var.project_name}_${var.stage}-codedeploy-app"
   compute_platform = "Server"
 
   tags = {
-    Name = "${var.project_name}-codedeploy-app"
+    Name = "${var.project_name}_${var.stage}-codedeploy-app"
   }
 }
 
 # SNS Topic for notifications (module-scoped)
 resource "aws_sns_topic" "notifications" {
   count = var.notification_email != "" ? 1 : 0
-  name  = "${var.project_name}-codedeploy-notifications"
+  name  = "${var.project_name}_${var.stage}-codedeploy-notifications"
 
   tags = {
-    Name = "${var.project_name}-codedeploy-notifications"
+    Name = "${var.project_name}_${var.stage}-codedeploy-notifications"
   }
 }
 
@@ -29,7 +29,7 @@ resource "aws_sns_topic_subscription" "notifications" {
 
 resource "aws_codedeploy_deployment_group" "app" {
   app_name               = aws_codedeploy_app.app.name
-  deployment_group_name  = "${var.stage}-deployment-group"
+  deployment_group_name  = "${var.project_name}_${var.stage}-deployment-group"
   service_role_arn       = var.codedeploy_role_arn
   deployment_config_name = var.deployment_config_name
 
@@ -84,13 +84,13 @@ resource "aws_codedeploy_deployment_group" "app" {
         "DeploymentStop",
         "DeploymentRollback"
       ]
-      trigger_name       = "${var.project_name}-deployment-trigger"
+      trigger_name       = "${var.project_name}_${var.stage}-deployment-trigger"
       trigger_target_arn = aws_sns_topic.notifications[0].arn
     }
   }
 
   tags = {
-    Name = "${var.project_name}-${var.stage}-deployment-group"
+    Name = "${var.project_name}_${var.stage}-deployment-group"
   }
 
   depends_on = [
@@ -148,7 +148,7 @@ resource "aws_codedeploy_deployment_group" "app" {
 # CloudWatch Metric Alarm for deployment failures
 resource "aws_cloudwatch_metric_alarm" "deployment_failed" {
   count               = var.enable_monitoring ? 1 : 0
-  alarm_name          = "${var.project_name}-deployment-failed"
+  alarm_name          = "${var.project_name}_${var.stage}-deployment-failed"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 1
   metric_name         = "FailedDeployments"
@@ -167,6 +167,6 @@ resource "aws_cloudwatch_metric_alarm" "deployment_failed" {
   alarm_actions = var.notification_email != "" ? [aws_sns_topic.notifications[0].arn] : []
 
   tags = {
-    Name = "${var.project_name}-deployment-failed-alarm"
+    Name = "${var.project_name}_${var.stage}-deployment-failed-alarm"
   }
 }

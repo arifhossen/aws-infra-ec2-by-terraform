@@ -8,7 +8,7 @@ data "aws_caller_identity" "current" {}
 
 # AWS CodeBuild project for building Docker images
 resource "aws_codebuild_project" "app_build" {
-  name          = "${var.project_name}-build"
+  name          = "${var.project_name}_${var.stage}-build"
   description   = "Build project for ${var.project_name}"
   build_timeout = var.codebuild_timeout
   service_role  = var.codebuild_role_arn
@@ -55,18 +55,18 @@ resource "aws_codebuild_project" "app_build" {
     }
 
     # Add any additional environment variables your build needs
-    # environment_variable {
-    #   name  = "BUILD_ENV"
-    #   value = "production"
-    # }
+    environment_variable {
+      name  = "BUILD_ENV"
+      value = var.stage
+    }
   }
 
-  # logs_config {
-  #   cloudwatch_logs {
-  #     group_name  = aws_cloudwatch_log_group.codebuild_logs.name
-  #     stream_name = "build-log"
-  #   }
-  # }
+  logs_config {
+    cloudwatch_logs {
+      group_name  = var.aws_cloudwatch_log_group_codebuild_logs_name
+      stream_name = "build-log"
+    }
+  }
 
   source {
     type      = "CODEPIPELINE"
@@ -81,7 +81,7 @@ resource "aws_codebuild_project" "app_build" {
   # }
 
   tags = {
-    Name = "${var.project_name}-build"
+    Name = "${var.project_name}_${var.stage}-build"
   }
 }
 
@@ -107,7 +107,7 @@ resource "aws_codebuild_project" "app_build" {
 # CloudWatch Event Rule to trigger build on ECR image push (optional)
 resource "aws_cloudwatch_event_rule" "ecr_image_push" {
   count       = 0 # Set to 1 to enable
-  name        = "${var.project_name}-ecr-image-push"
+  name        = "${var.project_name}_${var.stage}-ecr-image-push"
   description = "Trigger on ECR image push"
 
   event_pattern = jsonencode({
